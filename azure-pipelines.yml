@@ -1,0 +1,26 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  resourceGroup: 'k8s-monitoring-v2'
+  location: 'westeurope'
+  clusterName: 'aks-lab-cluster'
+
+stages:
+- stage: DeployAKS
+  displayName: 'AKS ve Monitoring Kurulumu'
+  jobs:
+  - job: AzureCLI
+    displayName: 'Azure CLI ile Altyapı Kur'
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'SC-Azure-Erdem' # Bu ismi birazdan Service Connection'da vereceğiz
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az group create --name $(resourceGroup) --location $(location)
+          az aks create --resource-group $(resourceGroup) --name $(clusterName) --node-count 1 --node-vm-size Standard_D2s_v3 --generate-ssh-keys
