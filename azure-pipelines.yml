@@ -18,7 +18,7 @@ stages:
     steps:
     - task: AzureCLI@2
       inputs:
-        azureSubscription: 'SC-Azure-Erdem' # Bu ismi birazdan Service Connection'da vereceğiz
+        azureSubscription: 'SC-Azure-Erdem'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
