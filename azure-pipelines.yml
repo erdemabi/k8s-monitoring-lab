@@ -14,7 +14,7 @@ stages:
   displayName: 'AKS ve Monitoring Kurulumu'
   jobs:
   - job: AzureCLI
-    displayName: 'Azure CLI ile Altyapı Kur'
+    displayName: 'Azure CLI ile Altyapı Kontrol Et ve Kur'
     steps:
     - task: AzureCLI@2
       inputs:
@@ -22,5 +22,34 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
+          # 1. Resource Group oluştur (Zaten varsa hata vermez, günceller)
           az group create --name $(resourceGroup) --location $(location)
-          az aks create --resource-group $(resourceGroup) --name $(clusterName) --node-count 1 --node-vm-size Standard_D2s_v3 --generate-ssh-keys
+
+          # 2. Cluster var mı kontrol et
+          exists=$(az aks list --query "[?name=='$(clusterName)' && resourceGroup=='$(resourceGroup)'] | length(@)")
+
+          if [ "$exists" -eq "0" ]; then
+            echo "--> AKS bulunamadı, yeni kurulum başlatılıyor..."
+            az aks create \
+              --resource-group $(resourceGroup) \
+              --name $(clusterName) \
+              --node-count 1 \
+              --node-vm-size Standard_D2s_v3 \
+              --generate-ssh-keys
+          else
+            echo "--> AKS zaten mevcut. Durumu kontrol ediliyor..."
+            
+            # Cluster 'Stopped' durumundaysa başlat
+            powerState=$(az aks show --resource-group $(resourceGroup) --name $(clusterName) --query "powerState.code" -o tsv)
+            if [ "$powerState" == "Stopped" ]; then
+              echo "--> Cluster durdurulmuş, başlatılıyor..."
+              az aks start --resource-group $(resourceGroup) --name $(clusterName)
+            else
+              echo "--> Cluster zaten çalışır durumda."
+            fi
+          fi
+
+          # 3. Bağlantı bilgilerini al (kubectl komutları için hazır hale getir)
+          az aks get-credentials --resource-group $(resourceGroup) --name $(clusterName) --overwrite-existing
+          
+          echo "--> Altyapı başarıyla hazırlandı!"
