@@ -55,7 +55,7 @@ stages:
           echo "--> Altyapı başarıyla hazırlandı!"
           variables:
           variables:
-          - group: monigorinv2 # Variable Group adın
+          - group: k8smonitoringv2 # Variable Group adın
 
            steps:
           - task: Docker@2
