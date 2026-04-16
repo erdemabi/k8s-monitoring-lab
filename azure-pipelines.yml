@@ -4,10 +4,21 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+# 1. Değişkenler ve Secret Grupları Burada Tanımlanır
 variables:
-  resourceGroup: 'k8s-monitoring-v2'
-  location: 'westeurope'
-  clusterName: 'aks-lab-cluster'
+  - group: k8smonitoringv2 # Variable Group adın
+  - name: resourceGroup
+    value: 'k8s-monitoring-v2'
+  - name: location
+    value: 'westeurope'
+  - name: clusterName
+    value: 'aks-lab-cluster'
+  - name: azureServiceConnection
+    value: 'SC-Azure-Erdem'
+  - name: dockerRegistryConnection
+    value: 'Monitoring-ACR-Conn' # Bu ismi Service Connection'da oluşturduğun isimle aynı yap
+  - name: imageRepository
+    value: 'monitoring-app'
 
 stages:
 - stage: DeployAKS
@@ -16,16 +27,16 @@ stages:
   - job: AzureCLI
     displayName: 'Azure CLI ile Altyapı Kontrol Et ve Kur'
     steps:
+    # 2. Azure CLI Task (Sadece Bash komutları içerir)
     - task: AzureCLI@2
+      displayName: 'Altyapı Kontrolü'
       inputs:
-        azureSubscription: 'SC-Azure-Erdem'
+        azureSubscription: '$(azureServiceConnection)'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          # 1. Resource Group oluştur (Zaten varsa hata vermez, günceller)
           az group create --name $(resourceGroup) --location $(location)
 
-          # 2. Cluster var mı kontrol et
           exists=$(az aks list --query "[?name=='$(clusterName)' && resourceGroup=='$(resourceGroup)'] | length(@)")
 
           if [ "$exists" -eq "0" ]; then
@@ -38,8 +49,6 @@ stages:
               --generate-ssh-keys
           else
             echo "--> AKS zaten mevcut. Durumu kontrol ediliyor..."
-            
-            # Cluster 'Stopped' durumundaysa başlat
             powerState=$(az aks show --resource-group $(resourceGroup) --name $(clusterName) --query "powerState.code" -o tsv)
             if [ "$powerState" == "Stopped" ]; then
               echo "--> Cluster durdurulmuş, başlatılıyor..."
@@ -49,17 +58,12 @@ stages:
             fi
           fi
 
-          # 3. Bağlantı bilgilerini al (kubectl komutları için hazır hale getir)
           az aks get-credentials --resource-group $(resourceGroup) --name $(clusterName) --overwrite-existing
-          
           echo "--> Altyapı başarıyla hazırlandı!"
-          variables:
-          variables:
-          - group: k8smonitoringv2 # Variable Group adın
 
-           steps:
-          - task: Docker@2
-             inputs:
-             containerRegistry: '$(azureServiceConnection)'
-            repository: '$(imageRepository)'
-            command: 'login'
+    # 3. Docker Login Task (AzureCLI task'ının DIŞINDA olmalı)
+    - task: Docker@2
+      displayName: 'Docker Login'
+      inputs:
+        containerRegistry: '$(dockerRegistryConnection)'
+        command: 'login'
