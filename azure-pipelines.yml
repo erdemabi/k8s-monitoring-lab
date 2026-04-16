@@ -55,7 +55,7 @@ stages:
           echo "--> Altyapı başarıyla hazırlandı!"
           variables:
           variables:
-          - group: Sikko-Secrets # Variable Group adın
+          - group: monigorinv2 # Variable Group adın
 
            steps:
           - task: Docker@2
