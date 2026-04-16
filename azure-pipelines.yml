@@ -53,3 +53,13 @@ stages:
           az aks get-credentials --resource-group $(resourceGroup) --name $(clusterName) --overwrite-existing
           
           echo "--> Altyapı başarıyla hazırlandı!"
+          variables:
+          variables:
+          - group: Sikko-Secrets # Variable Group adın
+
+           steps:
+          - task: Docker@2
+             inputs:
+             containerRegistry: '$(azureServiceConnection)'
+            repository: '$(imageRepository)'
+            command: 'login'
