@@ -1,0 +1,4 @@
+grafana:
+  adminPassword: "ehzHszevrbQKXmTGOolSetrYwAgWlaHCl7Rh7xaf"
+  persistence:
+    enabled: true
